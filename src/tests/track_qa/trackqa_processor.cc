@@ -148,6 +148,7 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
 
     //ACTS Trajectories
     auto trajectories = event->Get<eicrecon::TrackingResultTrajectory>("CentralCKFTrajectories");
+    //auto trajectories = event->Get<eicrecon::TrackingResultTrajectory>("CentralCKFSeededTrajectories");
 
     m_log->trace("Number of ACTS Trajectories: {}", trajectories.size());
     m_log->trace("");
