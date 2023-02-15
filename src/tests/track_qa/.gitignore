@@ -6,3 +6,10 @@ eicrecon.root
 eicrecon_out.dat
 eicrecon_out.root
 output.edm4hep.root
+
+*.root
+*.dat
+*.pdf
+.gitignore
+*_etarange*
+plot_hists.pdf

@@ -18,6 +18,7 @@
 
 #include <edm4hep/MCParticle.h>
 
+
 //------------------
 // (Constructor)
 //------------------
@@ -47,12 +48,183 @@ void trackqa_processor::Init()
 
     // Create a directory for this plugin. And subdirectories for series of histograms
     m_dir_main = file->mkdir(plugin_name.c_str());
+    m_dir_sub = m_dir_main->mkdir("eta_bins");
 
     //Define histograms
     h1a = new TH2D("h1a","",100,0,25,100,0,25);
     h1a->GetXaxis()->SetTitle("True Momentum [GeV/c]");h1a->GetXaxis()->CenterTitle();
     h1a->GetYaxis()->SetTitle("Rec. Track Momentum [GeV/c]");h1a->GetYaxis()->CenterTitle();
     h1a->SetDirectory(m_dir_main);
+
+    hchi2 = new TH1D("hchi2","",50,0,50);
+    hchi2->GetXaxis()->SetTitle("Track #Chi^{2} Sum");hchi2->GetXaxis()->CenterTitle();
+    hchi2->GetYaxis()->SetTitle("Counts");hchi2->GetYaxis()->CenterTitle();
+    hchi2->SetLineWidth(2);hchi2->SetLineColor(kBlue);
+    hchi2->SetDirectory(m_dir_main);
+
+    heta = new TH1D("heta","",50,-4,4);
+    heta->GetXaxis()->SetTitle("#eta (Generated)");heta->GetXaxis()->CenterTitle();
+    heta->GetYaxis()->SetTitle("Counts");heta->GetYaxis()->CenterTitle();
+    heta->SetLineWidth(2);heta->SetLineColor(kBlue);
+    heta->SetDirectory(m_dir_main);
+
+    hp = new TH1D("hp","",44,0,11);
+    hp->GetXaxis()->SetTitle("Momentum [GeV]");hp->GetXaxis()->CenterTitle();
+    hp->GetYaxis()->SetTitle("Counts");hp->GetYaxis()->CenterTitle();
+    hp->SetLineWidth(2);hp->SetLineColor(kBlue);
+    hp->SetDirectory(m_dir_main);
+
+    hpt = new TH1D("hpt","",50,0,10);
+    hpt->GetXaxis()->SetTitle("Transverse Momentum [GeV]");hpt->GetXaxis()->CenterTitle();
+    hpt->GetYaxis()->SetTitle("Counts");hpt->GetYaxis()->CenterTitle();
+    hpt->SetLineWidth(2);hpt->SetLineColor(kBlue);
+    hpt->SetDirectory(m_dir_main);
+
+    hhits = new TH1D("hhits","",50,0,50);
+    hhits->GetXaxis()->SetTitle("Number of Hits Found in Tracker");hhits->GetXaxis()->CenterTitle();
+    hhits->GetYaxis()->SetTitle("Counts");hhits->GetYaxis()->CenterTitle();
+    hhits->SetLineWidth(2);hhits->SetLineColor(kBlue);
+    hhits->SetDirectory(m_dir_main);
+
+    hNDF = new TH1D("hNDF","",25,0,25);
+    hNDF->GetXaxis()->SetTitle("NDF");hNDF->GetXaxis()->CenterTitle();
+    hNDF->GetYaxis()->SetTitle("Counts");hNDF->GetYaxis()->CenterTitle();
+    hNDF->SetLineWidth(2);hNDF->SetLineColor(kBlue);
+    hNDF->SetDirectory(m_dir_main);
+
+    hchi2_by_hits = new TH1D("hchi2_by_hits","",50,0,10);
+    hchi2_by_hits->GetXaxis()->SetTitle("Track #Chi^{2} Sum/Number of Hits");hchi2_by_hits->GetXaxis()->CenterTitle();
+    hchi2_by_hits->GetYaxis()->SetTitle("Counts");hchi2_by_hits->GetYaxis()->CenterTitle();
+    hchi2_by_hits->SetLineWidth(2);hchi2_by_hits->SetLineColor(kBlue);
+    hchi2_by_hits->SetDirectory(m_dir_main);
+
+    hchi2_by_NDF = new TH1D("hchi2_by_NDF","",50,0,10);
+    hchi2_by_NDF->GetXaxis()->SetTitle("Track #Chi^{2} Sum/NDF");hchi2_by_NDF->GetXaxis()->CenterTitle();
+    hchi2_by_NDF->GetYaxis()->SetTitle("Counts");hchi2_by_NDF->GetYaxis()->CenterTitle();
+    hchi2_by_NDF->SetLineWidth(2);hchi2_by_NDF->SetLineColor(kBlue);
+    hchi2_by_NDF->SetDirectory(m_dir_main);
+
+    //chi^2 and number of hits
+    hchi2_vs_eta = new TH2D("hchi2_vs_eta","",50,-4,4,50,0,50);
+    hchi2_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");hchi2_vs_eta->GetXaxis()->CenterTitle();
+    hchi2_vs_eta->GetYaxis()->SetTitle("Track #Chi^{2} Sum");hchi2_vs_eta->GetYaxis()->CenterTitle();
+    hchi2_vs_eta->SetDirectory(m_dir_main);
+
+    hchi2_vs_hits = new TH2D("hchi2_vs_hits","",50,0,50,50,0,50);
+    hchi2_vs_hits->GetXaxis()->SetTitle("Number of Hits");hchi2_vs_hits->GetXaxis()->CenterTitle();
+    hchi2_vs_hits->GetYaxis()->SetTitle("Track #Chi^{2} Sum");hchi2_vs_hits->GetYaxis()->CenterTitle();
+    hchi2_vs_hits->SetDirectory(m_dir_main);
+
+    hchi2_vs_hits_zoomed = new TH2D("hchi2_vs_hits_zoomed","",10,0,10,50,0,5);
+    hchi2_vs_hits_zoomed->GetXaxis()->SetTitle("Number of Hits");hchi2_vs_hits_zoomed->GetXaxis()->CenterTitle();
+    hchi2_vs_hits_zoomed->GetYaxis()->SetTitle("Track #Chi^{2} Sum");hchi2_vs_hits_zoomed->GetYaxis()->CenterTitle();
+    hchi2_vs_hits_zoomed->SetDirectory(m_dir_main);
+
+
+    hhits_vs_eta = new TH2D("hhits_vs_eta","",50,-4,4,50,0,50);
+    hhits_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");hhits_vs_eta->GetXaxis()->CenterTitle();
+    hhits_vs_eta->GetYaxis()->SetTitle("Number of Hits");hhits_vs_eta->GetYaxis()->CenterTitle();
+    hhits_vs_eta->SetDirectory(m_dir_main);
+
+    htracks_vs_eta = new TH2D("htracks_vs_eta","",50,-4,4,10,0,10);
+    htracks_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");htracks_vs_eta->GetXaxis()->CenterTitle();
+    htracks_vs_eta->GetYaxis()->SetTitle("Number of Tracks");htracks_vs_eta->GetYaxis()->CenterTitle();
+    htracks_vs_eta->SetDirectory(m_dir_main);
+
+    heta_vs_p_vs_chi2 = new TH3D("heta_vs_p_vs_chi2","",50,-4,4,44,0,11,50,0,50); //x: eta, y: p, z: chi^2
+    heta_vs_p_vs_chi2->GetXaxis()->SetTitle("#eta (Generated)"); heta_vs_p_vs_chi2->GetXaxis()->CenterTitle();
+    heta_vs_p_vs_chi2->GetYaxis()->SetTitle("Momentum [GeV]"); heta_vs_p_vs_chi2->GetYaxis()->CenterTitle();
+    heta_vs_p_vs_chi2->GetZaxis()->SetTitle("Track #Chi^{2} Sum"); heta_vs_p_vs_chi2->GetZaxis()->CenterTitle();
+    heta_vs_p_vs_chi2->SetDirectory(m_dir_main);
+
+    hmeasptrack_vs_eta = new TH2D("hmeasptrack_vs_eta","",50,-4,4,10,0,10);
+    hmeasptrack_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");hmeasptrack_vs_eta->GetXaxis()->CenterTitle();
+    hmeasptrack_vs_eta->GetYaxis()->SetTitle("Number of Measurements per Track");hmeasptrack_vs_eta->GetYaxis()->CenterTitle();
+    hmeasptrack_vs_eta->SetDirectory(m_dir_main);
+
+    hmeasptrack_vs_hits = new TH2D("hmeasptrack_vs_hits","",50,0,50,10,0,10);
+    hmeasptrack_vs_hits->GetXaxis()->SetTitle("Number of Hits");hmeasptrack_vs_hits->GetXaxis()->CenterTitle();
+    hmeasptrack_vs_hits->GetYaxis()->SetTitle("Number of Measurements per Track");hmeasptrack_vs_hits->GetYaxis()->CenterTitle();
+    hmeasptrack_vs_hits->SetDirectory(m_dir_main);
+
+    hmeasptrack_vs_chi2perNDF = new TH2D("hmeasptrack_vs_chi2perNDF","",50,0,50,10,0,10);
+    hmeasptrack_vs_chi2perNDF->GetXaxis()->SetTitle("Track #Chi^{2} Sum/NDF");hmeasptrack_vs_chi2perNDF->GetXaxis()->CenterTitle();
+    hmeasptrack_vs_chi2perNDF->GetYaxis()->SetTitle("Number of Measurements per Track");hmeasptrack_vs_chi2perNDF->GetYaxis()->CenterTitle();
+    hmeasptrack_vs_chi2perNDF->SetDirectory(m_dir_main);
+
+    hmeasptrack_vs_calstates = new TH2D("hmeasptrack_vs_calstates","",15,0,15,15,0,15);
+    hmeasptrack_vs_calstates->GetXaxis()->SetTitle("Number of Measurements per Track");hmeasptrack_vs_calstates->GetXaxis()->CenterTitle();
+    hmeasptrack_vs_calstates->GetYaxis()->SetTitle("Number of Calibrated States");hmeasptrack_vs_calstates->GetYaxis()->CenterTitle();
+    hmeasptrack_vs_calstates->SetDirectory(m_dir_main);
+
+    hmeaschi2_vs_chi2 = new TH2D("hmeaschi2_vs_chi2","",50,0,50,50,0,20);
+    hmeaschi2_vs_chi2->GetXaxis()->SetTitle("Track #Chi^{2} Sum");hmeaschi2_vs_chi2->GetXaxis()->CenterTitle();
+    hmeaschi2_vs_chi2->GetYaxis()->SetTitle("#Chi^{2} Individual Measurements");hmeaschi2_vs_chi2->GetYaxis()->CenterTitle();
+    hmeaschi2_vs_chi2->SetDirectory(m_dir_main);
+
+    hmeaschi2_vs_eta = new TH2D("hmeaschi2_vs_eta","",50,-4,4,50,0,20);
+    hmeaschi2_vs_eta->GetXaxis()->SetTitle("#eta");hmeaschi2_vs_eta->GetXaxis()->CenterTitle();
+    hmeaschi2_vs_eta->GetYaxis()->SetTitle("#Chi^{2} Individual Measurements");hmeaschi2_vs_eta->GetYaxis()->CenterTitle();
+    hmeaschi2_vs_eta->SetDirectory(m_dir_main);
+
+    hmeaschi2_vs_hits = new TH2D("hmeaschi2_vs_hits","",50,0,50,50,0,20);
+    hmeaschi2_vs_hits->GetXaxis()->SetTitle("Number of Hits");hmeaschi2_vs_hits->GetXaxis()->CenterTitle();
+    hmeaschi2_vs_hits->GetYaxis()->SetTitle("#Chi^{2} Individual Measurements");hmeaschi2_vs_hits->GetYaxis()->CenterTitle();
+    hmeaschi2_vs_hits->SetDirectory(m_dir_main);
+
+        //use 0.5i-4 to get lowerbound and 0.5i-3.5 to get upper bound
+    for (int i=0; i<16; i++){
+        TH2 *htemp = new TH2D(TString::Format("hchi2_vs_hits_eta_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+                    "",50,0,50,50,0,50);
+        htemp->GetXaxis()->SetTitle("Number of Hits");htemp->GetXaxis()->CenterTitle();
+        htemp->GetYaxis()->SetTitle("Track #Chi^{2} Sum");htemp->GetYaxis()->CenterTitle();
+        hchi2_vs_hits_etabins.push_back(htemp);
+        hchi2_vs_hits_etabins[i]->SetDirectory(m_dir_sub);
+
+        TH2 *htemp1 = new TH2D(TString::Format("hmeasptrack_vs_hits_eta_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+                    "",50,0,50,10,0,10);
+        htemp1->GetXaxis()->SetTitle("Number of Hits");htemp1->GetXaxis()->CenterTitle();
+        htemp1->GetYaxis()->SetTitle("Number of Measurements per Track");htemp1->GetYaxis()->CenterTitle();
+        hmeasptrack_vs_hits_etabins.push_back(htemp1);
+        hmeasptrack_vs_hits_etabins[i]->SetDirectory(m_dir_sub);
+
+        TH2 *htemp1b = new TH2D(TString::Format("hmeasptrack_vs_hits_eta_zoomed_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+                    "",10,0,10,10,0,10);
+        htemp1b->GetXaxis()->SetTitle("Number of Hits");htemp1b->GetXaxis()->CenterTitle();
+        htemp1b->GetYaxis()->SetTitle("Number of Measurements per Track");htemp1b->GetYaxis()->CenterTitle();
+        hmeasptrack_vs_hits_etabins_zoomed.push_back(htemp1b);
+        hmeasptrack_vs_hits_etabins_zoomed[i]->SetDirectory(m_dir_sub);
+
+        TH2 *htemp2 = new TH2D(TString::Format("hmeasptrack_vs_chi2perNDF_eta_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+                    "",50,0,50,10,0,10);
+        htemp2->GetXaxis()->SetTitle("Track #Chi^{2} Sum/NDF");htemp2->GetXaxis()->CenterTitle();
+        htemp2->GetYaxis()->SetTitle("Number of Measurements per Track");htemp2->GetYaxis()->CenterTitle();
+        hmeasptrack_vs_chi2perNDF_etabins.push_back(htemp2);
+        hmeasptrack_vs_chi2perNDF_etabins[i]->SetDirectory(m_dir_sub);
+    }
+    // hchi2_vs_hits_etabins->SetDirectory(m_dir_main);
+
+    hholes_vs_hits = new TH2D("hholes_vs_hits","",50,0,50,5,0,5);
+    hholes_vs_hits->GetXaxis()->SetTitle("Number of Hits");hholes_vs_hits->GetXaxis()->CenterTitle();
+    hholes_vs_hits->GetYaxis()->SetTitle("Number of Holes");hholes_vs_hits->GetYaxis()->CenterTitle();
+    hholes_vs_hits->SetDirectory(m_dir_main);
+
+    houtliers_vs_hits = new TH2D("houtliers_vs_hits","",50,0,50,5,0,5);
+    houtliers_vs_hits->GetXaxis()->SetTitle("Number of Hits");houtliers_vs_hits->GetXaxis()->CenterTitle();
+    houtliers_vs_hits->GetYaxis()->SetTitle("Number of Outliers");houtliers_vs_hits->GetYaxis()->CenterTitle();
+    houtliers_vs_hits->SetDirectory(m_dir_main);
+
+    hsummation = new TH2D("hsummation","",15,0,15,15,0,15);
+    hsummation->GetXaxis()->SetTitle("Number of Meas per Track + Number of Outliers");hsummation->GetXaxis()->CenterTitle();
+    hsummation->GetYaxis()->SetTitle("Number of Calibrated States");hsummation->GetYaxis()->CenterTitle();
+    hsummation->SetDirectory(m_dir_main);
+
+    hsummation2 = new TH2D("hsummation2","",50,0,50,50,0,50);
+    hsummation2->GetXaxis()->SetTitle("Number of Meas per Track + Number of Outliers");hsummation2->GetXaxis()->CenterTitle();
+    hsummation2->GetYaxis()->SetTitle("Number of Hits");hsummation2->GetYaxis()->CenterTitle();
+    hsummation2->SetDirectory(m_dir_main);
+    
+
 
     // Get log level from user parameter or default
     InitLogger(plugin_name);
@@ -76,6 +248,7 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
     double mceta = 0; //particle eta
     double mcphi = 0; //particle phi
     double mcp = 0; //total momentum
+    double mcpt = 0; //transverse momentum
     double mce = 0; //energy
     int mcid = 0; //PDG id
     int num_primary = 0; //Number of primary particles
@@ -91,11 +264,13 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
         mceta = -log(tan(atan2(sqrt(mom.x*mom.x+mom.y*mom.y),mom.z)/2.));
         mcphi = atan2(mom.y, mom.x);
 	    mcp = sqrt(mom.x*mom.x+mom.y*mom.y+mom.z*mom.z);
+        mcpt = sqrt(mom.x*mom.x+mom.y*mom.y);
         mce = sqrt(mcp*mcp + mcparticle->getMass()*mcparticle->getMass());	
 
         mcid = mcparticle->getPDG();
 
 	    num_primary++;
+
     }
 
     //Print generated info to log
@@ -140,6 +315,7 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
             m_log->trace("{:>10.2f} {:>10.2f} {:>10.2f} {:>10.2f} {:>10.2f}",x,y,z,r,etahit);
             nHitsallTrackers++;
         }
+
         m_log->trace("");
     }
 
@@ -148,11 +324,13 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
 
     //ACTS Trajectories
     auto trajectories = event->Get<eicrecon::TrackingResultTrajectory>("CentralCKFTrajectories");
+    //auto trajectories = event->Get<eicrecon::TrackingResultTrajectory>("CentralCKFSeededTrajectories"); // for realistic seeded trajectories
 
     m_log->trace("Number of ACTS Trajectories: {}", trajectories.size());
     m_log->trace("");
 
     // Loop over the trajectories
+
     for (const auto& traj : trajectories) {
 
         // Get the entry index for the single trajectory
@@ -173,6 +351,9 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
         int m_nMeasurements = trajState.nMeasurements;
         int m_nOutliers = trajState.nOutliers;
         auto m_chi2Sum = trajState.chi2Sum;
+        int m_NDF = trajState.NDF;
+        auto m_measurementChi2 = trajState.measurementChi2;
+        int m_nHoles = trajState.nHoles;
 
         //General Trajectory Information
         m_log->trace("Number of elements in trackTips {}", trackTips.size());
@@ -258,11 +439,53 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
             m_log->trace("");
         }); //End visiting track points
         m_log->trace("Number of calibrated states: {}",m_nCalibrated);
-
+        
         //Fill histograms
         if(num_primary==1){
             h1a->Fill(mcp,p_traj);
+            hchi2->Fill(m_chi2Sum);
+            heta->Fill(mceta);
+            hp->Fill(mcp);
+            hpt->Fill(mcpt);
+            hhits->Fill(nHitsallTrackers);
+            hNDF->Fill(m_NDF);
+            hchi2_by_hits->Fill(m_chi2Sum/nHitsallTrackers);
+            hchi2_by_NDF->Fill(m_chi2Sum/m_NDF);
+            
+            hchi2_vs_eta->Fill(mceta, m_chi2Sum);
+            hchi2_vs_hits->Fill(nHitsallTrackers, m_chi2Sum);
+            hchi2_vs_hits_zoomed->Fill(nHitsallTrackers, m_chi2Sum);
+            hhits_vs_eta->Fill(mceta, nHitsallTrackers);
+            htracks_vs_eta->Fill(mceta, trajectories.size());
+            heta_vs_p_vs_chi2->Fill(mceta, mcp, m_chi2Sum);
+            
+            hmeasptrack_vs_eta->Fill(mceta, m_nMeasurements);
+            hmeasptrack_vs_hits->Fill(nHitsallTrackers, m_nMeasurements);
+            hmeasptrack_vs_chi2perNDF->Fill(m_chi2Sum/m_NDF, m_nMeasurements);
+            hmeasptrack_vs_calstates->Fill(m_nCalibrated, m_nMeasurements);
+            
+            //floor(2*eta + 8) should give the index where bounds are [beg,end)
+            int index = floor(2*mceta+8);
+            hchi2_vs_hits_etabins[index]->Fill(nHitsallTrackers, m_chi2Sum);
+            hmeasptrack_vs_hits_etabins[index]->Fill(nHitsallTrackers, m_nMeasurements);
+            hmeasptrack_vs_hits_etabins_zoomed[index]->Fill(nHitsallTrackers, m_nMeasurements);
+            hmeasptrack_vs_chi2perNDF_etabins[index]->Fill(m_chi2Sum/m_NDF, m_nMeasurements);
+            
+
+            for (int j=0; j<m_measurementChi2.size(); j++){
+                hmeaschi2_vs_chi2->Fill(m_chi2Sum, m_measurementChi2[j]);
+                hmeaschi2_vs_eta->Fill(mceta, m_measurementChi2[j]);
+                hmeaschi2_vs_hits->Fill(nHitsallTrackers, m_measurementChi2[j]);
+            }
+
+            hholes_vs_hits->Fill(nHitsallTrackers, m_nHoles);
+            houtliers_vs_hits->Fill(nHitsallTrackers, m_nOutliers);
+            hsummation->Fill(m_nMeasurements + m_nOutliers, m_nCalibrated);
+            hsummation2->Fill(m_nOutliers + m_nMeasurements, nHitsallTrackers);
+            
         }
+        
+        
 
     } //End loop over trajectories
 

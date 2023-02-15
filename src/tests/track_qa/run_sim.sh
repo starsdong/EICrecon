@@ -4,7 +4,7 @@ source /opt/detector/setup.sh
 
 ddsim --steeringFile mysteer.py --compactFile $DETECTOR_PATH/epic.xml --outputFile output.edm4hep.root
 
-source /gpfs02/eic/baraks/epic/EICRecon/EICrecon/bin/eicrecon-this.sh
+source /global/project/projectdirs/m3763/blianggi/DD4HEP/EICrecon/bin/eicrecon-this.sh
 
 eicrecon \
 -Pplugins=dump_flags,track_qa \
