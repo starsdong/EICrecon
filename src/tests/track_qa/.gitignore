@@ -11,5 +11,5 @@ output.edm4hep.root
 *.dat
 *.pdf
 .gitignore
-*_etarange*
+*_etarange*.pdf
 plot_hists.pdf

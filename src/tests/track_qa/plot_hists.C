@@ -34,18 +34,21 @@ void plot_hists(){
     TH1 *hNDF = (TH1*) f->Get("track_qa/hNDF");
     TH1 *hchi2_by_hits = (TH1*) f->Get("track_qa/hchi2_by_hits");
     TH1 *hchi2_by_NDF = (TH1*) f->Get("track_qa/hchi2_by_NDF");
+    TH1 *hchi2_by_meas = (TH1*) f->Get("track_qa/hchi2_by_meas");
 
     TH2 *hchi2_vs_eta = (TH2*) f->Get("track_qa/hchi2_vs_eta");
     TH2 *hchi2_vs_hits = (TH2*) f->Get("track_qa/hchi2_vs_hits");
     TH2 *hchi2_vs_hits_zoomed = (TH2*) f->Get("track_qa/hchi2_vs_hits_zoomed");
     // vector<TH2*> hchi2_vs_hits_etabins = (vector<TH2*>) f->Get("track_qa/hchi2_vs_hits_etabins");
     TH2 *hhits_vs_eta = (TH2*) f->Get("track_qa/hhits_vs_eta");
+    TH2 *hhits_vs_eta_1 = (TH2*) f->Get("track_qa/hhits_vs_eta_1");
     TH2 *htracks_vs_eta = (TH2*) f->Get("track_qa/htracks_vs_eta");
     TH3 *heta_vs_p_vs_chi2 = (TH3*) f->Get("track_qa/heta_vs_p_vs_chi2");
     TH2 *hmeasptrack_vs_eta = (TH2*) f->Get("track_qa/hmeasptrack_vs_eta");
     TH2 *hmeasptrack_vs_hits = (TH2*) f->Get("track_qa/hmeasptrack_vs_hits");
     TH2 *hmeasptrack_vs_chi2perNDF = (TH2*) f->Get("track_qa/hmeasptrack_vs_chi2perNDF");
     TH2 *hmeasptrack_vs_calstates = (TH2*) f->Get("track_qa/hmeasptrack_vs_calstates");
+    TH2 *hNDF_states = (TH2*) f->Get("track_qa/hNDF_states");
 
     TH2 *hmeaschi2_vs_chi2 = (TH2*) f->Get("track_qa/hmeaschi2_vs_chi2");
     TH2 *hmeaschi2_vs_eta = (TH2*) f->Get("track_qa/hmeaschi2_vs_eta");
@@ -71,8 +74,7 @@ void plot_hists(){
     TH2 *houtliers_vs_hits = (TH2*) f->Get("track_qa/houtliers_vs_hits");
     TH2 *hsummation = (TH2*) f->Get("track_qa/hsummation");
     TH2 *hsummation2 = (TH2*) f->Get("track_qa/hsummation2");
-
-    
+    TH2 *hsummation3 = (TH2*) f->Get("track_qa/hsummation3");
 
     //Make plots
     TCanvas *c1a = new TCanvas("c1a");
@@ -95,7 +97,7 @@ void plot_hists(){
     tex_gen->Draw();
 
     TCanvas *c2b = new TCanvas("c2b");
-    c2b->Divide(2,2);
+    c2b->Divide(2,3);
     c2b->cd(1);
     hhits->Draw();
     c2b->cd(2);
@@ -104,6 +106,10 @@ void plot_hists(){
     hchi2_by_hits->Draw();
     c2b->cd(4);
     hchi2_by_NDF->Draw();
+    c2b->cd(5);
+    hchi2_by_meas->Draw();
+    c2b->cd(6);
+    hNDF_states->Draw("colz");
 
     TCanvas *c2c = new TCanvas("c2c","c2c",1200,900);
     c2c->Divide(2,2);
@@ -139,6 +145,9 @@ void plot_hists(){
 
     TCanvas *c5a = new TCanvas("c5a");
     hhits_vs_eta->Draw("colz");
+
+    TCanvas *c5b = new TCanvas("c5b");
+    hhits_vs_eta_1->Draw("colz");
 
     TCanvas *c6a = new TCanvas("c6a");
     htracks_vs_eta->Draw("colz");
@@ -188,8 +197,6 @@ void plot_hists(){
     TCanvas *c11a = new TCanvas("c11a");
     hmeasptrack_vs_calstates->Draw("colz");
 
-
-
     TCanvas *c12a = new TCanvas("c12a");
     hmeaschi2_vs_chi2->Draw("colz");
 
@@ -211,6 +218,8 @@ void plot_hists(){
     TCanvas *c18a = new TCanvas("c18a");
     hsummation2->Draw("colz");
 
+    TCanvas *c19a = new TCanvas("c19a");
+    hsummation3->Draw("colz");
 
     //Print plots to file
     c1a->Print("plot_hists_etarange_flat.pdf[");
@@ -223,6 +232,7 @@ void plot_hists(){
     c4b->Print("plot_hists_etarange_flat.pdf");
     c4c->Print("plot_hists_etarange_flat.pdf");
     c5a->Print("plot_hists_etarange_flat.pdf");
+    c5b->Print("plot_hists_etarange_flat.pdf");
     c6a->Print("plot_hists_etarange_flat.pdf");
     c7a->Print("plot_hists_etarange_flat.pdf");
     c8a->Print("plot_hists_etarange_flat.pdf");
@@ -239,5 +249,6 @@ void plot_hists(){
     c16a->Print("plot_hists_etarange_flat.pdf");
     c17a->Print("plot_hists_etarange_flat.pdf");
     c18a->Print("plot_hists_etarange_flat.pdf");
-    c18a->Print("plot_hists_etarange_flat.pdf]");
+    c19a->Print("plot_hists_etarange_flat.pdf");
+    c19a->Print("plot_hists_etarange_flat.pdf]");
 }

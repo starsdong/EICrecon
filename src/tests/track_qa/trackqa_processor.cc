@@ -104,6 +104,12 @@ void trackqa_processor::Init()
     hchi2_by_NDF->SetLineWidth(2);hchi2_by_NDF->SetLineColor(kBlue);
     hchi2_by_NDF->SetDirectory(m_dir_main);
 
+    hchi2_by_meas = new TH1D("hchi2_by_meas","",50,0,10);
+    hchi2_by_meas->GetXaxis()->SetTitle("Track #Chi^{2} Sum/meas");hchi2_by_meas->GetXaxis()->CenterTitle();
+    hchi2_by_meas->GetYaxis()->SetTitle("Counts");hchi2_by_meas->GetYaxis()->CenterTitle();
+    hchi2_by_meas->SetLineWidth(2);hchi2_by_meas->SetLineColor(kBlue);
+    hchi2_by_meas->SetDirectory(m_dir_main);
+
     //chi^2 and number of hits
     hchi2_vs_eta = new TH2D("hchi2_vs_eta","",50,-4,4,50,0,50);
     hchi2_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");hchi2_vs_eta->GetXaxis()->CenterTitle();
@@ -120,11 +126,15 @@ void trackqa_processor::Init()
     hchi2_vs_hits_zoomed->GetYaxis()->SetTitle("Track #Chi^{2} Sum");hchi2_vs_hits_zoomed->GetYaxis()->CenterTitle();
     hchi2_vs_hits_zoomed->SetDirectory(m_dir_main);
 
-
     hhits_vs_eta = new TH2D("hhits_vs_eta","",50,-4,4,50,0,50);
     hhits_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");hhits_vs_eta->GetXaxis()->CenterTitle();
     hhits_vs_eta->GetYaxis()->SetTitle("Number of Hits");hhits_vs_eta->GetYaxis()->CenterTitle();
     hhits_vs_eta->SetDirectory(m_dir_main);
+
+    hhits_vs_eta_1 = new TH2D("hhits_vs_eta_1","At least one track reconstructed",50,-4,4,50,0,50);
+    hhits_vs_eta_1->GetXaxis()->SetTitle("#eta (Generated)");hhits_vs_eta_1->GetXaxis()->CenterTitle();
+    hhits_vs_eta_1->GetYaxis()->SetTitle("Number of Hits");hhits_vs_eta_1->GetYaxis()->CenterTitle();
+    hhits_vs_eta_1->SetDirectory(m_dir_main);
 
     htracks_vs_eta = new TH2D("htracks_vs_eta","",50,-4,4,10,0,10);
     htracks_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");htracks_vs_eta->GetXaxis()->CenterTitle();
@@ -136,6 +146,11 @@ void trackqa_processor::Init()
     heta_vs_p_vs_chi2->GetYaxis()->SetTitle("Momentum [GeV]"); heta_vs_p_vs_chi2->GetYaxis()->CenterTitle();
     heta_vs_p_vs_chi2->GetZaxis()->SetTitle("Track #Chi^{2} Sum"); heta_vs_p_vs_chi2->GetZaxis()->CenterTitle();
     heta_vs_p_vs_chi2->SetDirectory(m_dir_main);
+
+    hNDF_states = new TH2D("hNDF_states","",25,0,25,25,0,25);
+    hNDF_states->GetXaxis()->SetTitle("NDF");hNDF_states->GetXaxis()->CenterTitle();
+    hNDF_states->GetYaxis()->SetTitle("States");hNDF_states->GetYaxis()->CenterTitle();
+    hNDF_states->SetDirectory(m_dir_main);
 
     hmeasptrack_vs_eta = new TH2D("hmeasptrack_vs_eta","",50,-4,4,10,0,10);
     hmeasptrack_vs_eta->GetXaxis()->SetTitle("#eta (Generated)");hmeasptrack_vs_eta->GetXaxis()->CenterTitle();
@@ -223,7 +238,11 @@ void trackqa_processor::Init()
     hsummation2->GetXaxis()->SetTitle("Number of Meas per Track + Number of Outliers");hsummation2->GetXaxis()->CenterTitle();
     hsummation2->GetYaxis()->SetTitle("Number of Hits");hsummation2->GetYaxis()->CenterTitle();
     hsummation2->SetDirectory(m_dir_main);
-    
+
+    hsummation3 = new TH2D("hsummation3","",15,0,15,15,0,15);
+    hsummation3->GetXaxis()->SetTitle("Number of Meas per Track + Number of Outliers + Number of Holes");hsummation3->GetXaxis()->CenterTitle();
+    hsummation3->GetYaxis()->SetTitle("Number of States");hsummation3->GetYaxis()->CenterTitle();
+    hsummation3->SetDirectory(m_dir_main);
 
 
     // Get log level from user parameter or default
@@ -330,6 +349,7 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
     m_log->trace("");
 
     // Loop over the trajectories
+    int num_traj = 0;
 
     for (const auto& traj : trajectories) {
 
@@ -438,26 +458,25 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
             
             m_log->trace("");
         }); //End visiting track points
+     
         m_log->trace("Number of calibrated states: {}",m_nCalibrated);
+        num_traj++;
         
         //Fill histograms
         if(num_primary==1){
             h1a->Fill(mcp,p_traj);
             hchi2->Fill(m_chi2Sum);
-            heta->Fill(mceta);
-            hp->Fill(mcp);
-            hpt->Fill(mcpt);
-            hhits->Fill(nHitsallTrackers);
             hNDF->Fill(m_NDF);
             hchi2_by_hits->Fill(m_chi2Sum/nHitsallTrackers);
             hchi2_by_NDF->Fill(m_chi2Sum/m_NDF);
+            hchi2_by_meas->Fill(m_chi2Sum/m_nMeasurements);
             
             hchi2_vs_eta->Fill(mceta, m_chi2Sum);
             hchi2_vs_hits->Fill(nHitsallTrackers, m_chi2Sum);
             hchi2_vs_hits_zoomed->Fill(nHitsallTrackers, m_chi2Sum);
-            hhits_vs_eta->Fill(mceta, nHitsallTrackers);
-            htracks_vs_eta->Fill(mceta, trajectories.size());
             heta_vs_p_vs_chi2->Fill(mceta, mcp, m_chi2Sum);
+
+            hNDF_states->Fill(m_NDF,state_counter);
             
             hmeasptrack_vs_eta->Fill(mceta, m_nMeasurements);
             hmeasptrack_vs_hits->Fill(nHitsallTrackers, m_nMeasurements);
@@ -482,12 +501,22 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
             houtliers_vs_hits->Fill(nHitsallTrackers, m_nOutliers);
             hsummation->Fill(m_nMeasurements + m_nOutliers, m_nCalibrated);
             hsummation2->Fill(m_nOutliers + m_nMeasurements, nHitsallTrackers);
+            hsummation3->Fill(m_nMeasurements + m_nOutliers + m_nHoles,m_nStates);
             
         }
-        
-        
 
     } //End loop over trajectories
+
+    if(num_primary==1){
+        heta->Fill(mceta);
+        hp->Fill(mcp);
+        hpt->Fill(mcpt);
+        hhits->Fill(nHitsallTrackers);
+        htracks_vs_eta->Fill(mceta, num_traj);
+
+        hhits_vs_eta->Fill(mceta, nHitsallTrackers);
+        if(num_traj>0) hhits_vs_eta_1->Fill(mceta, nHitsallTrackers);
+    }
 
     m_log->trace("-------------------------");
 
