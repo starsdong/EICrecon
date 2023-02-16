@@ -18,6 +18,7 @@
 
 #include <edm4hep/MCParticle.h>
 
+#include "TVectorT.h"
 
 //------------------
 // (Constructor)
@@ -187,30 +188,38 @@ void trackqa_processor::Init()
     hmeaschi2_vs_hits->GetYaxis()->SetTitle("#Chi^{2} Individual Measurements");hmeaschi2_vs_hits->GetYaxis()->CenterTitle();
     hmeaschi2_vs_hits->SetDirectory(m_dir_main);
 
-        //use 0.5i-4 to get lowerbound and 0.5i-3.5 to get upper bound
-    for (int i=0; i<16; i++){
-        TH2 *htemp = new TH2D(TString::Format("hchi2_vs_hits_eta_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+    const int n_eta_bins = 16;
+    TVectorT<double> V_eta_edges(n_eta_bins+1);
+
+    //use 0.5i-4 to get lowerbound and 0.5i-3.5 to get upper bound
+    for (int i=0; i<n_eta_bins; i++){
+        double low_eta = 0.5*i-4;
+        double high_eta = 0.5*i-3.5;
+        V_eta_edges[i] = low_eta;
+        V_eta_edges[i+1] = high_eta;
+    
+	TH2 *htemp = new TH2D(TString::Format("hchi2_vs_hits_eta_%.1f_%.1f", low_eta, high_eta),
                     "",50,0,50,50,0,50);
         htemp->GetXaxis()->SetTitle("Number of Hits");htemp->GetXaxis()->CenterTitle();
         htemp->GetYaxis()->SetTitle("Track #Chi^{2} Sum");htemp->GetYaxis()->CenterTitle();
         hchi2_vs_hits_etabins.push_back(htemp);
         hchi2_vs_hits_etabins[i]->SetDirectory(m_dir_sub);
 
-        TH2 *htemp1 = new TH2D(TString::Format("hmeasptrack_vs_hits_eta_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+        TH2 *htemp1 = new TH2D(TString::Format("hmeasptrack_vs_hits_eta_%.1f_%.1f", low_eta, high_eta),
                     "",50,0,50,10,0,10);
         htemp1->GetXaxis()->SetTitle("Number of Hits");htemp1->GetXaxis()->CenterTitle();
         htemp1->GetYaxis()->SetTitle("Number of Measurements per Track");htemp1->GetYaxis()->CenterTitle();
         hmeasptrack_vs_hits_etabins.push_back(htemp1);
         hmeasptrack_vs_hits_etabins[i]->SetDirectory(m_dir_sub);
 
-        TH2 *htemp1b = new TH2D(TString::Format("hmeasptrack_vs_hits_eta_zoomed_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+        TH2 *htemp1b = new TH2D(TString::Format("hmeasptrack_vs_hits_eta_zoomed_%.1f_%.1f", low_eta, high_eta), 
                     "",10,0,10,10,0,10);
         htemp1b->GetXaxis()->SetTitle("Number of Hits");htemp1b->GetXaxis()->CenterTitle();
         htemp1b->GetYaxis()->SetTitle("Number of Measurements per Track");htemp1b->GetYaxis()->CenterTitle();
         hmeasptrack_vs_hits_etabins_zoomed.push_back(htemp1b);
         hmeasptrack_vs_hits_etabins_zoomed[i]->SetDirectory(m_dir_sub);
 
-        TH2 *htemp2 = new TH2D(TString::Format("hmeasptrack_vs_chi2perNDF_eta_%.1f_%.1f", 0.5*i-4,0.5*i-3.5),
+        TH2 *htemp2 = new TH2D(TString::Format("hmeasptrack_vs_chi2perNDF_eta_%.1f_%.1f", low_eta, high_eta), 
                     "",50,0,50,10,0,10);
         htemp2->GetXaxis()->SetTitle("Track #Chi^{2} Sum/NDF");htemp2->GetXaxis()->CenterTitle();
         htemp2->GetYaxis()->SetTitle("Number of Measurements per Track");htemp2->GetYaxis()->CenterTitle();
@@ -218,6 +227,9 @@ void trackqa_processor::Init()
         hmeasptrack_vs_chi2perNDF_etabins[i]->SetDirectory(m_dir_sub);
     }
     // hchi2_vs_hits_etabins->SetDirectory(m_dir_main);
+
+    file -> cd();
+    V_eta_edges.Write("V_eta_edges");
 
     hholes_vs_hits = new TH2D("hholes_vs_hits","",50,0,50,5,0,5);
     hholes_vs_hits->GetXaxis()->SetTitle("Number of Hits");hholes_vs_hits->GetXaxis()->CenterTitle();
