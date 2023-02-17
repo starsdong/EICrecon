@@ -22,23 +22,23 @@ namespace eicrecon {
     float m_rMin = 33. * Acts::UnitConstants::mm; // min r to look for hits to compose seeds
     float m_zMax = 1700. * Acts::UnitConstants::mm; // max z to look for hits to compose seeds
     float m_zMin = -1500. * Acts::UnitConstants::mm; // min z to look for hits to compose seeds
-    float m_deltaRMinTopSP = 1. * Acts::UnitConstants::mm; // Min distance in r between middle and top SP in one seed
+    float m_deltaRMinTopSP = 10. * Acts::UnitConstants::mm; // Min distance in r between middle and top SP in one seed
     float m_deltaRMaxTopSP = 400. * Acts::UnitConstants::mm; // Max distance in r between middle and top SP in one seed
-    float m_deltaRMinBottomSP = 1. * Acts::UnitConstants::mm; // Min distance in r between middle and bottom SP in one seed
+    float m_deltaRMinBottomSP = 10. * Acts::UnitConstants::mm; // Min distance in r between middle and bottom SP in one seed
     float m_deltaRMaxBottomSP = 400. * Acts::UnitConstants::mm; // Max distance in r between middle and top SP in one seed
-    float m_collisionRegionMin = -300 * Acts::UnitConstants::mm; // Min z for primary vertex
-    float m_collisionRegionMax = 300 * Acts::UnitConstants::mm; // Max z for primary vertex 
+    float m_collisionRegionMin = -250 * Acts::UnitConstants::mm; // Min z for primary vertex
+    float m_collisionRegionMax = 250 * Acts::UnitConstants::mm; // Max z for primary vertex 
 
-    float m_maxSeedsPerSpM = 1; // max number of seeds a single middle sp can belong to - 1
+    float m_maxSeedsPerSpM = 0; // max number of seeds a single middle sp can belong to - 1
     float m_cotThetaMax = 27.29; // Cotangent of max theta angle (27.29 corresponds to eta = 4)
     float m_sigmaScattering = 5; // How many standard devs of scattering angles to consider
     float m_radLengthPerSeed = 0.1; // Average radiation lengths of material on the length of a seed
-    float m_minPt = 100.; // MeV - minimum transverse momentum
-    float m_bFieldInZ = 0.0017; // kTesla - Magnetic field strength
+    float m_minPt = 6*Acts::UnitConstants::MeV; // MeV - minimum transverse momentum
+    float m_bFieldInZ = 1.7*Acts::UnitConstants::T; // kTesla - Magnetic field strength
     float m_beamPosX = 0; // x offset for beam position
     float m_beamPosY = 0; // y offset for beam position
-    float m_impactMax = 20. * Acts::UnitConstants::mm; // Maximum transverse PCA allowed
-    float m_rMinMiddle = 20. * Acts::UnitConstants::mm; // Middle spacepoint must fall between these two radii
+    float m_impactMax = 3. * Acts::UnitConstants::mm; // Maximum transverse PCA allowed
+    float m_rMinMiddle = 10. * Acts::UnitConstants::mm; // Middle spacepoint must fall between these two radii
     float m_rMaxMiddle = 400. * Acts::UnitConstants::mm;
 
     Acts::SeedFilterConfig m_seedFilterConfig;
@@ -51,9 +51,9 @@ namespace eicrecon {
     /// to global settings (more loose) followed by more strict cuts for the central
     /// and forward/backward regions separately.
 
-    float m_maxSeedsPerSpM_filter = 10; // max number of seeds a single middle sp can belong to - 1
+    float m_maxSeedsPerSpM_filter = 0; // max number of seeds a single middle sp can belong to - 1
     float m_deltaRMin = 5* Acts::UnitConstants::mm;
-    bool m_seedConfirmation = true;
+    bool m_seedConfirmation = false;
     float m_deltaInvHelixDiameter = 0.00003 * 1. / Acts::UnitConstants::mm;
     float m_impactWeightFactor = 1.;
     float m_zOriginWeightFactor = 1.;
