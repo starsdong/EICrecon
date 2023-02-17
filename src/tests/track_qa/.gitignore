@@ -10,6 +10,8 @@ output.edm4hep.root
 *.root
 *.dat
 *.pdf
-.gitignore
+run_sim_etarange.sh
 *_etarange*.pdf
+
+.gitignore
 plot_hists.pdf

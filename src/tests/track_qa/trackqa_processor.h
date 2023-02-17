@@ -94,7 +94,7 @@ public:
 
     TH2 *hholes_vs_hits; //# of holes per # of hits
     TH2 *houtliers_vs_hits; //# of outliers [er # of hits
-    TH2 *hsummation; //confirm that # calibrated states = # of trajectories + # outliers
+    TH2 *hsummation; //compare # calibrated states with # of trajectories + # outliers //This comparison doesn't make sense - remove later
     TH2 *hsummation2; //confirm that # hits = # of outliers + # meas per track
     TH2 *hsummation3; //compare #meas + #outliers + #holes to #states
 

@@ -192,7 +192,7 @@ void trackqa_processor::Init()
     TVectorT<double> V_eta_edges(n_eta_bins+1);
 
     //use 0.5i-4 to get lowerbound and 0.5i-3.5 to get upper bound
-    for (int i=0; i<16; i++){
+    for (int i=0; i<n_eta_bins; i++){
         double low_eta = 0.5*i-4;
         double high_eta = 0.5*i-3.5;
         V_eta_edges[i] = low_eta;
