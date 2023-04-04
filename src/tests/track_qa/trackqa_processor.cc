@@ -462,7 +462,7 @@ void trackqa_processor::Process(const std::shared_ptr<const JEvent>& event)
             // convert local to global
             auto global = trackstate.referenceSurface().localToGlobal(
                     m_geo_provider->getActsGeometryContext(),
-                    {parameter[Acts::eBoundLoc0], parameter[Acts::eBoundLoc1]},
+                    {state_params[Acts::eBoundLoc0], state_params[Acts::eBoundLoc1]},
                     {0, 0, 0} );
             auto global_r = sqrt(global.x()*global.x()+global.y()*global.y());
             m_log->trace("State global x, y, z, r and pathlength:");
