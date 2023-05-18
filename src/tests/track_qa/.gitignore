@@ -13,5 +13,4 @@ output.edm4hep.root
 run_sim_etarange.sh
 *_etarange*.pdf
 
-.gitignore
 plot_hists.pdf
