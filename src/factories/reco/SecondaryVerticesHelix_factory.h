@@ -30,6 +30,7 @@ private:
 
   // Declare outputs
   PodioOutput<edm4eic::Vertex> m_secondary_vertices_output{this};
+  PodioOutput<edm4eic::ReconstructedParticle> m_v0_candidates_output{this};
 
   // Declare parameters
   ParameterRef<bool> m_unlikesign{this, "unlikesign", config().unlikesign};
@@ -37,6 +38,7 @@ private:
   ParameterRef<float> m_maxDca12{this, "maxDca12", config().maxDca12};
   ParameterRef<float> m_maxDca{this, "maxDca", config().maxDca};
   ParameterRef<float> m_minCostheta{this, "minCostheta", config().minCostheta};
+  ParameterRef<std::vector<int>> m_v0Hypotheses{this, "v0Hypotheses", config().v0Hypotheses};
 
   Service<AlgorithmsInit_service> m_algorithmsInit{this};
 
@@ -51,7 +53,7 @@ public:
 
   void Process(int32_t /* run_number */, uint64_t /* event_number */) {
     m_algo->process({m_rc_vertices_input(), m_rc_parts_input()},
-                    {m_secondary_vertices_output().get()});
+                    {m_secondary_vertices_output().get(), m_v0_candidates_output().get()});
   }
 };
 

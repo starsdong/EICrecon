@@ -18,14 +18,16 @@ namespace eicrecon {
 
 using SecondaryVertexKFParticleAlgorithm = algorithms::Algorithm<
     algorithms::Input<edm4eic::VertexCollection, edm4eic::ReconstructedParticleCollection>,
-    algorithms::Output<edm4eic::VertexCollection>>;
+    algorithms::Output<edm4eic::VertexCollection, edm4eic::ReconstructedParticleCollection>>;
 
 /**
  * @brief Two-track secondary (V0) vertex finder using the KFParticle package
  *
  * Same inputs, outputs and selection logic as SecondaryVerticesHelix, but the
  * daughters are built as KFParticle objects from the full perigee track
- * covariance and the V0 vertex is obtained from a KFParticle fit.
+ * covariance and the V0 vertex is obtained from a KFParticle fit. The fitted
+ * V0 under each mass hypothesis (mass and momentum at the decay vertex) is
+ * written as a ReconstructedParticle.
  */
 class SecondaryVertexKFParticle : public SecondaryVertexKFParticleAlgorithm,
                                   public WithPodConfig<SecondaryVertexKFParticleConfig> {
@@ -34,7 +36,7 @@ public:
   SecondaryVertexKFParticle(std::string_view name)
       : SecondaryVertexKFParticleAlgorithm{name,
                                            {"inputVertices", "inputParticles"},
-                                           {"outputSecondaryVertices"},
+                                           {"outputSecondaryVertices", "outputV0Candidates"},
                                            "Reconstruct secondary vertices with KFParticle"} {}
 
   void init() final;
