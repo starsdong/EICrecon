@@ -354,6 +354,7 @@ JEventProcessorPODIO::JEventProcessorPODIO() {
       "ScatteredElectronsEMinusPzByPt",
       "PrimaryVertices",
       "SecondaryVerticesHelix",
+      "SecondaryVerticesKFParticle",
       "PrimaryVerticesAMVF",
       "SecondaryVerticesAMVF",
       "BarrelClusters",
