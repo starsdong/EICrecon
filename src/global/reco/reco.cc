@@ -48,6 +48,7 @@
 #include "factories/reco/ReconstructedElectrons_factory.h"
 #include "factories/reco/ScatteredElectronsEMinusPz_factory.h"
 #include "factories/reco/ScatteredElectronsTruth_factory.h"
+#include "factories/reco/SecondaryVertexKFParticle_factory.h"
 #include "factories/reco/SecondaryVerticesHelix_factory.h"
 #include "factories/reco/TrackClusterMatch_factory.h"
 #include "factories/reco/TransformBreitFrame_factory.h"
@@ -347,5 +348,9 @@ void InitPlugin(JApplication* app) {
       "Truthiness", {"MCParticles", "ReconstructedParticles", "ReconstructedParticleAssociations"},
       {"Truthiness"}, {}, app));
 #endif
+
+  app->Add(new JOmniFactoryGeneratorT<SecondaryVertexKFParticle_factory>(
+      "SecondaryVertexKFParticle", {"PrimaryVertices", "ReconstructedParticles"},
+      {"SecondaryVerticesKFParticle"}, {}, app));
 }
 } // extern "C"

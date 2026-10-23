@@ -421,6 +421,18 @@ macro(plugin_add_fastjet _name)
 
 endmacro()
 
+# Adds KFParticle for a plugin
+macro(plugin_add_kfparticle _name)
+
+  if(NOT KFPARTICLE_FOUND)
+    find_package(KFParticle REQUIRED)
+  endif()
+
+  # Add libraries (includes and HomogeneousField definition come with target)
+  plugin_link_libraries(${_name} KFParticle::KFParticle)
+
+endmacro()
+
 # Adds FastJetTools for a plugin
 macro(plugin_add_fastjettools _name)
 
