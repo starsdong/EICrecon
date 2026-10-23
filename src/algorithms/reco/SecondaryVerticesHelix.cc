@@ -18,6 +18,7 @@
 #include "algorithms/reco/Helix.h"
 #include "algorithms/reco/SecondaryVerticesHelix.h"
 #include "algorithms/reco/SecondaryVerticesHelixConfig.h"
+#include "algorithms/reco/V0Hypotheses.h"
 #include "services/particle/ParticleSvc.h"
 
 namespace eicrecon {
@@ -26,18 +27,28 @@ namespace eicrecon {
    * @brief Initialize the SecondaryVerticesHelix Algorithm
    *
    */
-void SecondaryVerticesHelix::init() {}
+void SecondaryVerticesHelix::init() {
+  for (int pdg : m_cfg.v0Hypotheses) {
+    if (!v0_daughter_pdgs(pdg)) {
+      warning("V0 hypothesis PDG {} is not supported (use 310, 3122, -3122); skipping it", pdg);
+    }
+  }
+}
 
 /**
    * @brief Produce a list of secondary vertex candidates
    *
+   * For each found vertex, the pair is also written as a ReconstructedParticle
+   * for every V0 mass hypothesis in the config, with the mass computed from
+   * the daughter momenta at the decay vertex (helix points of closest approach).
+   *
    * @param rcvtx  - input collection of all vertex candidates
-   * @return edm4eic::VertexCollection
+   * @return edm4eic::VertexCollection, edm4eic::ReconstructedParticleCollection
    */
 void SecondaryVerticesHelix::process(const SecondaryVerticesHelix::Input& input,
                                      const SecondaryVerticesHelix::Output& output) const {
-  const auto [rcvtx, rcparts]   = input;
-  auto [out_secondary_vertices] = output;
+  const auto [rcvtx, rcparts]                      = input;
+  auto [out_secondary_vertices, out_v0_candidates] = output;
 
   auto& particleSvc = algorithms::ParticleSvc::instance();
 
@@ -54,7 +65,7 @@ void SecondaryVerticesHelix::process(const SecondaryVerticesHelix::Input& input,
   auto fieldObj = m_det->field();
   auto field    = fieldObj.magneticField(
       {pVtxPos4f.x / edm4eic::unit::mm * dd4hep::mm, pVtxPos4f.y / edm4eic::unit::mm * dd4hep::mm,
-       pVtxPos4f.z / edm4eic::unit::mm * dd4hep::mm}); // in unit of dd4hep::tesla
+          pVtxPos4f.z / edm4eic::unit::mm * dd4hep::mm}); // in unit of dd4hep::tesla
   float b_field = field.z();
 
   debug("Primary vertex = ({},{},{})cm \t b field = {} tesla", pVtxPos.x, pVtxPos.y, pVtxPos.z,
@@ -138,6 +149,34 @@ void SecondaryVerticesHelix::process(const SecondaryVerticesHelix::Input& input,
                       (float)(pairPos.z * edm4eic::unit::cm / edm4eic::unit::mm), (float)time});
       v0.addToAssociatedParticles(p1);
       v0.addToAssociatedParticles(p2);
+
+      // V0 candidates under each mass hypothesis, daughter momenta at the decay vertex
+      const bool firstIsPositive = p1.getCharge() > 0;
+      const auto& momPos         = firstIsPositive ? h1MomAtDca : h2MomAtDca;
+      const auto& momNeg         = firstIsPositive ? h2MomAtDca : h1MomAtDca;
+      const double momPosMag     = edm4hep::utils::magnitude(momPos);
+      const double momNegMag     = edm4hep::utils::magnitude(momNeg);
+      for (int v0Pdg : m_cfg.v0Hypotheses) {
+        const auto dPdgs = v0_daughter_pdgs(v0Pdg);
+        if (!dPdgs) {
+          continue;
+        }
+        const double eV0 = std::hypot(momPosMag, particleSvc.particle(dPdgs->first).mass) +
+                           std::hypot(momNegMag, particleSvc.particle(dPdgs->second).mass);
+        const double pV0  = edm4hep::utils::magnitude(pairMom);
+        const double m2V0 = eV0 * eV0 - pV0 * pV0;
+
+        auto cand = out_v0_candidates->create();
+        cand.setPDG(v0Pdg);
+        cand.setCharge(0.);
+        cand.setMass(m2V0 > 0. ? std::sqrt(m2V0) : 0.);
+        cand.setEnergy(eV0);
+        cand.setMomentum(pairMom);
+        cand.setReferencePoint({v0.getPosition().x, v0.getPosition().y, v0.getPosition().z}); // mm
+        cand.setStartVertex(v0);
+        cand.addToParticles(p1);
+        cand.addToParticles(p2);
+      }
 
       debug("One secondary vertex found at (x,y,z) = ({}, {}, {}) mm.",
             pairPos.x * edm4eic::unit::cm / edm4eic::unit::mm,

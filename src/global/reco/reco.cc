@@ -340,7 +340,7 @@ void InitPlugin(JApplication* app) {
 
   app->Add(new JOmniFactoryGeneratorT<SecondaryVerticesHelix_factory>(
       "SecondaryVerticesHelix", {"PrimaryVertices", "ReconstructedParticles"},
-      {"SecondaryVerticesHelix"}, {}, app));
+      {"SecondaryVerticesHelix", "SecondaryV0sHelix"}, {}, app));
 
   // Truthiness metric for event quality assessment
 #if __has_include(<edm4eic/Truthiness.h>)
@@ -351,6 +351,6 @@ void InitPlugin(JApplication* app) {
 
   app->Add(new JOmniFactoryGeneratorT<SecondaryVertexKFParticle_factory>(
       "SecondaryVertexKFParticle", {"PrimaryVertices", "ReconstructedParticles"},
-      {"SecondaryVerticesKFParticle"}, {}, app));
+      {"SecondaryVerticesKFParticle", "SecondaryV0sKFParticle"}, {}, app));
 }
 } // extern "C"

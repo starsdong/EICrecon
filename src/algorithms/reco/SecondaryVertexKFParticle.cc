@@ -8,6 +8,7 @@
 #include <KFParticle.h>
 #include <KFVertex.h>
 #include <edm4eic/Cov4f.h>
+#include <edm4eic/ReconstructedParticleCollection.h>
 #include <edm4eic/TrackParametersCollection.h>
 #include <edm4eic/TrackCollection.h>
 #include <edm4eic/TrajectoryCollection.h>
@@ -16,10 +17,12 @@
 #include <cmath>
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "algorithms/reco/SecondaryVertexKFParticle.h"
 #include "algorithms/reco/SecondaryVertexKFParticleConfig.h"
+#include "algorithms/reco/V0Hypotheses.h"
 
 namespace eicrecon {
 
@@ -117,18 +120,30 @@ void SecondaryVertexKFParticle::init() {
   const float bz_tesla = field.z() / dd4hep::tesla;
   KFParticle::SetField(bz_tesla * 10.); // kGauss
   debug("KFParticle homogeneous field Bz = {} tesla", bz_tesla);
+
+  for (int pdg : m_cfg.v0Hypotheses) {
+    if (!v0_daughter_pdgs(pdg)) {
+      warning("V0 hypothesis PDG {} is not supported (use 310, 3122, -3122); skipping it", pdg);
+    }
+  }
 }
 
 /**
    * @brief Produce a list of secondary vertex candidates
    *
+   * The pair finding and the output vertex use the daughter PDG hypotheses
+   * from PID. For each found vertex, the daughters are then refitted under
+   * each V0 mass hypothesis in the config (K0S, Lambda, anti-Lambda), and the
+   * fitted V0 (mass, momentum at the decay vertex) is written as a
+   * ReconstructedParticle pointing to the vertex and its two daughters.
+   *
    * @param rcvtx  - input collection of all vertex candidates
-   * @return edm4eic::VertexCollection
+   * @return edm4eic::VertexCollection, edm4eic::ReconstructedParticleCollection
    */
 void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& input,
                                         const SecondaryVertexKFParticle::Output& output) const {
-  const auto [rcvtx, rcparts]   = input;
-  auto [out_secondary_vertices] = output;
+  const auto [rcvtx, rcparts]                      = input;
+  auto [out_secondary_vertices, out_v0_candidates] = output;
 
   if (rcvtx->empty()) {
     debug("No primary vertex in this event");
@@ -151,6 +166,7 @@ void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& 
   debug("Primary vertex = ({},{},{})cm", pVtx.GetX(), pVtx.GetY(), pVtx.GetZ());
 
   std::vector<KFParticle> kVec;
+  std::vector<KFPTrack> trackVec;
   std::vector<unsigned int> indexVec;
   for (unsigned int i = 0; i < rcparts->size(); ++i) {
     const auto& p = (*rcparts)[i];
@@ -170,6 +186,7 @@ void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& 
     }
 
     kVec.push_back(kp);
+    trackVec.push_back(*kt);
     indexVec.push_back(i);
   }
 
@@ -236,6 +253,48 @@ void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& 
       vtx.setPositionError(cov);
       vtx.addToAssociatedParticles(p1);
       vtx.addToAssociatedParticles(p2);
+
+      // Refit the pair under each V0 mass hypothesis
+      const bool firstIsPositive = p1.getCharge() > 0;
+      const auto& tPos           = firstIsPositive ? trackVec[i1] : trackVec[i2];
+      const auto& tNeg           = firstIsPositive ? trackVec[i2] : trackVec[i1];
+      for (int v0Pdg : m_cfg.v0Hypotheses) {
+        const auto dPdgs = v0_daughter_pdgs(v0Pdg);
+        if (!dPdgs) {
+          continue;
+        }
+        const KFParticle dPos(tPos, dPdgs->first);
+        const KFParticle dNeg(tNeg, dPdgs->second);
+        KFParticle v0h;
+        const KFParticle* hypDaughters[2] = {&dPos, &dNeg};
+        v0h.Construct(hypDaughters, 2);
+        float mass = 0.f, massErr = 0.f;
+        if (v0h.GetNDF() <= 0 || v0h.GetMass(mass, massErr) != 0) {
+          continue;
+        }
+
+        // Covariance of the (px,py,pz,E) 4-vector, KFParticle indices 3..6
+        const edm4eic::Cov4f momCov(v0h.GetCovariance(3, 3), v0h.GetCovariance(4, 4),
+                                    v0h.GetCovariance(5, 5), v0h.GetCovariance(6, 6),
+                                    v0h.GetCovariance(3, 4), v0h.GetCovariance(3, 5),
+                                    v0h.GetCovariance(3, 6), v0h.GetCovariance(4, 5),
+                                    v0h.GetCovariance(4, 6), v0h.GetCovariance(5, 6));
+
+        auto cand = out_v0_candidates->create();
+        cand.setPDG(v0Pdg);
+        cand.setCharge(0.);
+        cand.setMass(mass);
+        cand.setEnergy(v0h.GetE());
+        cand.setMomentum({v0h.GetPx(), v0h.GetPy(), v0h.GetPz()});
+        cand.setReferencePoint({(float)(v0h.GetX() * kCmToMm), (float)(v0h.GetY() * kCmToMm),
+                                (float)(v0h.GetZ() * kCmToMm)});
+        cand.setCovMatrix(momCov);
+        cand.setStartVertex(vtx);
+        cand.addToParticles(p1);
+        cand.addToParticles(p2);
+
+        debug("\tV0 hypothesis {}: mass = {} +- {} GeV", v0Pdg, mass, massErr);
+      }
 
       debug("One secondary vertex found at (x,y,z) = ({}, {}, {}) mm, chi2/ndf = {}/{}.",
             v0.GetX() * kCmToMm, v0.GetY() * kCmToMm, v0.GetZ() * kCmToMm, v0.GetChi2(),

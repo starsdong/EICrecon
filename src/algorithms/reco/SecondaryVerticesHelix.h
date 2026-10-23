@@ -19,7 +19,7 @@ namespace eicrecon {
 
 using SecondaryVerticesHelixAlgorithm = algorithms::Algorithm<
     algorithms::Input<edm4eic::VertexCollection, edm4eic::ReconstructedParticleCollection>,
-    algorithms::Output<edm4eic::VertexCollection>>;
+    algorithms::Output<edm4eic::VertexCollection, edm4eic::ReconstructedParticleCollection>>;
 
 class SecondaryVerticesHelix : public SecondaryVerticesHelixAlgorithm,
                                public WithPodConfig<SecondaryVerticesHelixConfig> {
@@ -29,7 +29,7 @@ public:
       : SecondaryVerticesHelixAlgorithm{
             name,
             {"inputVertices", "inputParticles"},
-            {"outputSecondaryVertices"},
+            {"outputSecondaryVertices", "outputV0Candidates"},
             "Reconstruct secondary vertices in SecondaryVertices collection"} {}
 
   void init() final;
