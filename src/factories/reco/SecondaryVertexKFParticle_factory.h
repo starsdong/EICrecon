@@ -40,6 +40,7 @@ private:
   ParameterRef<float> m_minCostheta{this, "minCostheta", config().minCostheta};
   ParameterRef<float> m_maxChi2Ndf{this, "maxChi2Ndf", config().maxChi2Ndf};
   ParameterRef<std::vector<int>> m_v0Hypotheses{this, "v0Hypotheses", config().v0Hypotheses};
+  ParameterRef<bool> m_covFromTrajectory{this, "covFromTrajectory", config().covFromTrajectory};
 
   Service<AlgorithmsInit_service> m_algorithmsInit{this};
 

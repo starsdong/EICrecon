@@ -8,6 +8,7 @@
 #include <KFParticle.h>
 #include <KFVertex.h>
 #include <edm4eic/Cov4f.h>
+#include <edm4eic/Cov6f.h>
 #include <edm4eic/ReconstructedParticleCollection.h>
 #include <edm4eic/TrackParametersCollection.h>
 #include <edm4eic/TrackCollection.h>
@@ -33,17 +34,55 @@ namespace {
   constexpr double kCmToMm = edm4eic::unit::cm / edm4eic::unit::mm;
 
   /**
-   * Build a KFPTrack from the perigee parameters of the first track attached to
-   * a reconstructed particle. The ACTS bound covariance [l0,l1,phi,theta,q/p]
-   * is propagated to the Cartesian basis [x,y,z,px,py,pz] that KFParticle uses.
-   * Track::positionMomentumCovariance is not filled by ActsToTracks, so the
-   * bound covariance is the only full covariance available.
+   * Cartesian covariance [x,y,z,px,py,pz] (mm, GeV) of a track, packed
+   * lower-triangular as KFParticle expects, with positions converted to cm.
    */
-  std::optional<KFPTrack> make_kfp_track(const edm4eic::ReconstructedParticle& p) {
-    if (p.getTracks().empty()) {
-      return std::nullopt;
+  using KFPCov = std::array<float, 21>;
+
+  KFPCov to_kfp_cov(const std::array<std::array<double, 6>, 6>& c) {
+    KFPCov C{};
+    for (std::size_t i = 0, k = 0; i < 6; ++i) {
+      for (std::size_t j = 0; j <= i; ++j, ++k) {
+        double v = c[i][j];
+        if (i < 3) {
+          v *= kMmToCm;
+        }
+        if (j < 3) {
+          v *= kMmToCm;
+        }
+        C[k] = static_cast<float>(v);
+      }
     }
-    const auto track      = p.getTracks()[0];
+    return C;
+  }
+
+  /**
+   * Covariance from Track::positionMomentumCovariance. ActsToTracks fills it
+   * since EICrecon v1.43.0 (eic/EICrecon#3024) by propagating the perigee bound
+   * covariance with the surface's bound-to-free Jacobian. Earlier versions
+   * leave it empty (all zeros); return nullopt then.
+   */
+  std::optional<KFPCov> cov_from_track(const edm4eic::Track& track) {
+    const auto& tc = track.getPositionMomentumCovariance();
+    std::array<std::array<double, 6>, 6> c{};
+    for (unsigned i = 0; i < 6; ++i) {
+      if (!(tc(i, i) > 0.f) || !std::isfinite(tc(i, i))) {
+        return std::nullopt;
+      }
+      for (unsigned j = 0; j < 6; ++j) {
+        c[i][j] = tc(i, j);
+      }
+    }
+    return to_kfp_cov(c);
+  }
+
+  /**
+   * Covariance from the ACTS bound covariance [l0,l1,phi,theta,q/p] of the
+   * track's Trajectory, propagated to [x,y,z,px,py,pz] with an analytic
+   * Jacobian for a perigee surface along z. Used for EICrecon < 1.43 (empty
+   * Track::positionMomentumCovariance) or when covFromTrajectory is set.
+   */
+  std::optional<KFPCov> cov_from_trajectory(const edm4eic::Track& track) {
     const auto trajectory = track.getTrajectory();
     if (!trajectory.isAvailable() || trajectory.getTrackParameters().empty()) {
       return std::nullopt;
@@ -75,33 +114,56 @@ namespace {
     }};
     const auto& cb = pars.getCovariance();
 
-    // C = J Cb J^T, packed lower-triangular as KFParticle expects, with
-    // positions converted from mm to cm
-    std::array<float, 21> C{};
-    for (std::size_t i = 0, k = 0; i < 6; ++i) {
-      for (std::size_t j = 0; j <= i; ++j, ++k) {
-        double c = 0.;
+    std::array<std::array<double, 6>, 6> c{};
+    for (std::size_t i = 0; i < 6; ++i) {
+      for (std::size_t j = 0; j <= i; ++j) {
+        double v = 0.;
         for (std::size_t a = 0; a < 5; ++a) {
           for (std::size_t b = 0; b < 5; ++b) {
-            c += J[i][a] * cb(a, b) * J[j][b];
+            v += J[i][a] * cb(a, b) * J[j][b];
           }
         }
-        if (i < 3) {
-          c *= kMmToCm;
-        }
-        if (j < 3) {
-          c *= kMmToCm;
-        }
-        C[k] = static_cast<float>(c);
+        c[i][j] = c[j][i] = v;
       }
+    }
+    return to_kfp_cov(c);
+  }
+
+  /**
+   * Build a KFPTrack at the perigee of the first track attached to a
+   * reconstructed particle: position, momentum and Cartesian covariance from
+   * the edm4eic::Track. The covariance is Track::positionMomentumCovariance
+   * when it is filled, otherwise (or with covFromTrajectory) it is computed
+   * from the Trajectory's bound covariance.
+   */
+  std::optional<KFPTrack> make_kfp_track(const edm4eic::ReconstructedParticle& p,
+                                         bool covFromTrajectory, bool& usedTrajectory) {
+    if (p.getTracks().empty()) {
+      return std::nullopt;
+    }
+    const auto track = p.getTracks()[0];
+    const auto mom   = track.getMomentum(); // GeV, at the perigee
+    if (track.getCharge() == 0 || !std::isfinite(mom.x) || (mom.x == 0 && mom.y == 0 && mom.z == 0)) {
+      return std::nullopt;
+    }
+
+    std::optional<KFPCov> C;
+    if (!covFromTrajectory) {
+      C = cov_from_track(track);
+    }
+    usedTrajectory = !C.has_value();
+    if (!C) {
+      C = cov_from_trajectory(track);
+    }
+    if (!C) {
+      return std::nullopt;
     }
 
     const auto pos = track.getPosition(); // mm, at the perigee
     KFPTrack kt;
-    kt.SetParameters(pos.x * kMmToCm, pos.y * kMmToCm, pos.z * kMmToCm, pAbs * sth * cphi,
-                     pAbs * sth * sphi, pAbs * cth);
-    kt.SetCovarianceMatrix(C.data());
-    kt.SetCharge(static_cast<int>(q));
+    kt.SetParameters(pos.x * kMmToCm, pos.y * kMmToCm, pos.z * kMmToCm, mom.x, mom.y, mom.z);
+    kt.SetCovarianceMatrix(C->data());
+    kt.SetCharge(static_cast<int>(std::copysign(1.f, track.getCharge())));
     kt.SetNDF(static_cast<int>(track.getNdf()));
     kt.SetChi2(track.getChi2());
     return kt;
@@ -165,6 +227,7 @@ void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& 
 
   debug("Primary vertex = ({},{},{})cm", pVtx.GetX(), pVtx.GetY(), pVtx.GetZ());
 
+  std::size_t nTracks = 0, nFromTrajectory = 0;
   std::vector<KFParticle> kVec;
   std::vector<KFPTrack> trackVec;
   std::vector<unsigned int> indexVec;
@@ -173,10 +236,13 @@ void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& 
     if (p.getCharge() == 0) {
       continue;
     }
-    const auto kt = make_kfp_track(p);
+    bool usedTrajectory = false;
+    const auto kt       = make_kfp_track(p, m_cfg.covFromTrajectory, usedTrajectory);
     if (!kt) {
       continue;
     }
+    ++nTracks;
+    nFromTrajectory += usedTrajectory ? 1 : 0;
     // Mass hypothesis from the particle PDG; KFParticle falls back to the
     // pion mass for codes it does not know (including 0)
     KFParticle kp(*kt, p.getPDG());
@@ -190,7 +256,8 @@ void SecondaryVertexKFParticle::process(const SecondaryVertexKFParticle::Input& 
     indexVec.push_back(i);
   }
 
-  debug("\tVector size {}, {}", kVec.size(), indexVec.size());
+  debug("\tVector size {}, {}; covariance from the Trajectory for {} of {} tracks", kVec.size(),
+        indexVec.size(), nFromTrajectory, nTracks);
 
   for (unsigned int i1 = 0; i1 < kVec.size(); ++i1) {
     for (unsigned int i2 = i1 + 1; i2 < kVec.size(); ++i2) {

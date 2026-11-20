@@ -19,6 +19,11 @@ struct SecondaryVertexKFParticleConfig {
 
   // V0 mass hypotheses refitted for every vertex: K0S, Lambda, anti-Lambda
   std::vector<int> v0Hypotheses = {310, 3122, -3122};
+
+  // Daughter covariance: false = Track::positionMomentumCovariance (filled by
+  // ActsToTracks since EICrecon v1.43.0; falls back to the Trajectory if empty),
+  // true = always recompute it from the Trajectory's bound covariance
+  bool covFromTrajectory = false;
 };
 
 } // namespace eicrecon
